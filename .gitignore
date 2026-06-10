@@ -42,3 +42,6 @@ yarn-error.*
 
 # env
 .env
+
+# supabase CLI scratch
+supabase/.temp/

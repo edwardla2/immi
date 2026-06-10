@@ -1,6 +1,7 @@
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import { useAuth } from '@/hooks/useAuth';
+import { BYPASS_AUTH, MOCK_PROFILE } from '@/lib/config';
 import { supabase } from '@/lib/supabase';
 import { Profile } from '@/lib/types';
 
@@ -15,10 +16,16 @@ const ProfileContext = createContext<ProfileContextValue | undefined>(undefined)
 
 export function ProfileProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<Profile | null>(BYPASS_AUTH ? MOCK_PROFILE : null);
+  const [loading, setLoading] = useState(!BYPASS_AUTH);
 
   const refresh = useCallback(async () => {
+    // Auth-bypass mode: keep the mock profile, never query Supabase.
+    if (BYPASS_AUTH) {
+      setProfile((prev) => prev ?? MOCK_PROFILE);
+      setLoading(false);
+      return;
+    }
     if (!user) {
       setProfile(null);
       setLoading(false);
@@ -36,6 +43,11 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
   const update = useCallback(
     async (updates: Partial<Profile>) => {
+      // Auth-bypass mode: merge edits into the in-memory mock, skip persistence.
+      if (BYPASS_AUTH) {
+        setProfile((prev) => ({ ...(prev ?? MOCK_PROFILE), ...updates }));
+        return { error: null };
+      }
       if (!user) return { error: 'Not authenticated' };
       const { data, error } = await supabase
         .from('profiles')

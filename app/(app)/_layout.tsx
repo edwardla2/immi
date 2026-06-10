@@ -3,6 +3,7 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { TabBar } from '@/components/ui/TabBar';
 import { Colors } from '@/constants/colors';
+import { BYPASS_AUTH } from '@/lib/config';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 
@@ -19,8 +20,11 @@ export default function AppLayout() {
   }
 
   // Guard the whole tab group: must be signed in and onboarded.
-  if (!session) return <Redirect href="/(auth)/sign-in" />;
-  if (!profile?.onboarding_completed) return <Redirect href="/(onboarding)/step-1" />;
+  // Auth-bypass mode skips the guard entirely.
+  if (!BYPASS_AUTH) {
+    if (!session) return <Redirect href="/(auth)/sign-in" />;
+    if (!profile?.onboarding_completed) return <Redirect href="/(onboarding)/step-1" />;
+  }
 
   return (
     <Tabs

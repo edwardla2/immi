@@ -4,6 +4,7 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { Wordmark } from '@/components/ui/Wordmark';
 import { Colors } from '@/constants/colors';
 import { Spacing } from '@/constants/layout';
+import { BYPASS_AUTH } from '@/lib/config';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 
@@ -16,6 +17,11 @@ import { useProfile } from '@/hooks/useProfile';
 export default function Index() {
   const { session, loading: authLoading } = useAuth();
   const { profile, loading: profileLoading } = useProfile();
+
+  // Auth-bypass mode: skip the session + onboarding checks and land in the app.
+  if (BYPASS_AUTH) {
+    return <Redirect href="/(app)/chat" />;
+  }
 
   if (authLoading) {
     return <Loading />;

@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { DeadlineCard } from '@/components/timeline/DeadlineCard';
@@ -74,13 +74,21 @@ export default function Timeline() {
   };
 
   const askQuestion = async () => {
-    const { data } = await createConversation();
-    if (data) router.push(`/conversation/${data.id}`);
+    const { data, error } = await createConversation();
+    if (data) {
+      router.push(`/conversation/${data.id}`);
+    } else {
+      Alert.alert('Could not start a conversation', error ?? 'Please try again.');
+    }
   };
 
   const findForm = async () => {
-    const { data } = await createConversation();
-    if (data) router.push(`/conversation/${data.id}?prefill=form`);
+    const { data, error } = await createConversation();
+    if (data) {
+      router.push(`/conversation/${data.id}?prefill=form`);
+    } else {
+      Alert.alert('Could not start a conversation', error ?? 'Please try again.');
+    }
   };
 
   return (

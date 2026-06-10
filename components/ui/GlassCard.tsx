@@ -11,6 +11,8 @@ interface GlassCardProps {
   intensity?: number;
   padding?: number;
   borderRadius?: number;
+  /** Style for the inner content wrapper — e.g. { flex: 1 } when the card must bound a ScrollView. */
+  contentStyle?: ViewStyle;
 }
 
 /**
@@ -23,13 +25,14 @@ export function GlassCard({
   intensity = 20,
   padding = 16,
   borderRadius = Radius.xl,
+  contentStyle,
 }: GlassCardProps) {
   return (
     <View style={[styles.wrapper, { borderRadius }, style]}>
       <BlurView intensity={intensity} tint="dark" style={StyleSheet.absoluteFill} />
       <View style={[StyleSheet.absoluteFill, styles.overlay, { borderRadius }]} />
       <View style={[styles.edge, { borderRadius }]} pointerEvents="none" />
-      <View style={{ padding }}>{children}</View>
+      <View style={[{ padding }, contentStyle]}>{children}</View>
     </View>
   );
 }

@@ -2,16 +2,18 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { ConversationCard } from '@/components/chat/ConversationCard';
+import { DevModeBadge } from '@/components/ui/DevModeBadge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { Screen } from '@/components/ui/Screen';
 import { Colors } from '@/constants/colors';
 import { Radius, Spacing, TAB_BAR_CLEARANCE } from '@/constants/layout';
 import { Typography } from '@/constants/typography';
+import { BYPASS_AUTH } from '@/lib/config';
 import { useConversations } from '@/hooks/useConversations';
 
 export default function ChatList() {
@@ -27,10 +29,15 @@ export default function ChatList() {
 
   const handleNew = async () => {
     setCreating(true);
-    const { data } = await create();
+    const { data, error } = await create();
     setCreating(false);
     if (data) {
       router.push(`/conversation/${data.id}`);
+    } else {
+      Alert.alert(
+        'Could not start a conversation',
+        error ?? 'Something went wrong. Please check your connection and try again.'
+      );
     }
   };
 
@@ -41,6 +48,11 @@ export default function ChatList() {
 
   return (
     <Screen edges={['top']}>
+      {BYPASS_AUTH ? (
+        <View style={styles.devBadgeRow}>
+          <DevModeBadge />
+        </View>
+      ) : null}
       <View style={styles.header}>
         <Text style={styles.title}>Conversations</Text>
         <Pressable onPress={handleNew} style={styles.newButton} disabled={creating}>
@@ -96,6 +108,10 @@ export default function ChatList() {
 }
 
 const styles = StyleSheet.create({
+  devBadgeRow: {
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.sm,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

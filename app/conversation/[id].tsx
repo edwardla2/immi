@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { KeyboardAvoidingView } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ChatInput } from '@/components/chat/ChatInput';
@@ -20,6 +21,7 @@ import { SecondaryButton } from '@/components/ui/SecondaryButton';
 import { Colors } from '@/constants/colors';
 import { Spacing } from '@/constants/layout';
 import { Typography } from '@/constants/typography';
+import { BYPASS_AUTH } from '@/lib/config';
 import { supabase } from '@/lib/supabase';
 import { useMessages } from '@/hooks/useMessages';
 import { Conversation } from '@/lib/types';
@@ -36,13 +38,33 @@ export default function ConversationScreen() {
   const [convLoading, setConvLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
-  const { messages, loading, sendMessage, retry } = useMessages(id);
+  const { messages, loading, sendMessage, retry, actionNotice, clearActionNotice } =
+    useMessages(id);
+
+  // Auto-dismiss the "added to your timeline" toast.
+  useEffect(() => {
+    if (!actionNotice) return;
+    const timer = setTimeout(clearActionNotice, 4000);
+    return () => clearTimeout(timer);
+  }, [actionNotice, clearActionNotice]);
 
   useEffect(() => {
     let active = true;
     (async () => {
       if (!id) {
         setNotFound(true);
+        setConvLoading(false);
+        return;
+      }
+      // Auth-bypass mode: use an in-memory conversation, skip the DB lookup.
+      if (BYPASS_AUTH) {
+        setConversation({
+          id,
+          user_id: 'mock-user',
+          title: 'New Conversation',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
         setConvLoading(false);
         return;
       }
@@ -103,6 +125,12 @@ export default function ConversationScreen() {
         ) : (
           <MessageList messages={messages} onRetry={retry} />
         )}
+        {actionNotice ? (
+          <Animated.View entering={FadeInDown.duration(250)} style={styles.toast}>
+            <Ionicons name="checkmark-circle" size={16} color={Colors.success} />
+            <Text style={styles.toastText}>{actionNotice}</Text>
+          </Animated.View>
+        ) : null}
         <ChatInput onSend={sendMessage} initialText={initialText} />
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -167,5 +195,22 @@ const styles = StyleSheet.create({
   backBtn: {
     alignSelf: 'stretch',
     marginHorizontal: Spacing.xl,
+  },
+  toast: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'center',
+    gap: 6,
+    backgroundColor: Colors.successMuted,
+    borderColor: 'rgba(52, 211, 153, 0.4)',
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    marginBottom: Spacing.sm,
+  },
+  toastText: {
+    ...Typography.labelM,
+    color: Colors.success,
   },
 });

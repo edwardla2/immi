@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { sendChatMessage } from '@/lib/api';
+import { BYPASS_AUTH } from '@/lib/config';
 import { supabase } from '@/lib/supabase';
 import { ChatMessageInput, Message } from '@/lib/types';
 import { localId } from '@/lib/utils';
@@ -12,9 +13,17 @@ export function useMessages(conversationId: string | undefined) {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  // Set when the assistant used tools to add deadlines/documents — drives a toast.
+  const [actionNotice, setActionNotice] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!conversationId) {
+      setLoading(false);
+      return;
+    }
+    // Auth-bypass mode: local conversation ids aren't in the DB. Start empty and
+    // keep the thread in memory for the session.
+    if (BYPASS_AUTH) {
       setLoading(false);
       return;
     }
@@ -24,7 +33,10 @@ export function useMessages(conversationId: string | undefined) {
       .select('*')
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true });
-    if (error) setLoadError(error.message);
+    if (error) {
+      console.error('[Immi chat] failed to load message history:', error);
+      setLoadError(error.message);
+    }
     setMessages((data as Message[]) ?? []);
     setLoading(false);
   }, [conversationId]);
@@ -46,7 +58,7 @@ export function useMessages(conversationId: string | undefined) {
       ];
 
       try {
-        const reply = await sendChatMessage(apiMessages, conversationId);
+        const { message: reply, added } = await sendChatMessage(apiMessages, conversationId);
         setMessages((prev) => [
           ...prev.filter((m) => m.id !== LOADING_ID),
           {
@@ -57,7 +69,18 @@ export function useMessages(conversationId: string | undefined) {
             created_at: new Date().toISOString(),
           },
         ]);
+        if (added.deadlines > 0 || added.documents > 0) {
+          const parts: string[] = [];
+          if (added.deadlines > 0) {
+            parts.push(`${added.deadlines} deadline${added.deadlines === 1 ? '' : 's'}`);
+          }
+          if (added.documents > 0) {
+            parts.push(`${added.documents} document${added.documents === 1 ? '' : 's'}`);
+          }
+          setActionNotice(`Added ${parts.join(' and ')} to your account`);
+        }
       } catch (err) {
+        console.error('[Immi chat] send failed:', err);
         const messageText =
           err instanceof Error ? err.message : 'Something went wrong. Tap to retry.';
         setMessages((prev) => [
@@ -129,5 +152,17 @@ export function useMessages(conversationId: string | undefined) {
     await deliver(history, lastUser.content);
   }, [messages, sending, conversationId, deliver]);
 
-  return { messages, loading, sending, loadError, sendMessage, retry, refresh: load };
+  const clearActionNotice = useCallback(() => setActionNotice(null), []);
+
+  return {
+    messages,
+    loading,
+    sending,
+    loadError,
+    sendMessage,
+    retry,
+    refresh: load,
+    actionNotice,
+    clearActionNotice,
+  };
 }

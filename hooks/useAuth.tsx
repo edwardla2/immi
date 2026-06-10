@@ -1,6 +1,7 @@
 import { Session, User } from '@supabase/supabase-js';
 import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
 
+import { BYPASS_AUTH, MOCK_SESSION } from '@/lib/config';
 import { supabase } from '@/lib/supabase';
 
 interface AuthResult {
@@ -21,9 +22,16 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!BYPASS_AUTH);
 
   useEffect(() => {
+    // Auth-bypass mode: never touch Supabase auth. The mock session is supplied
+    // at value-construction time below.
+    if (BYPASS_AUTH) {
+      setLoading(false);
+      return;
+    }
+
     let mounted = true;
 
     supabase.auth.getSession().then(({ data }) => {
@@ -43,8 +51,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const value = useMemo<AuthContextValue>(
-    () => ({
+  const value = useMemo<AuthContextValue>(() => {
+    // Auth-bypass mode: hand back a mock session and no-op auth actions that
+    // always resolve successfully. The real branch below is untouched.
+    if (BYPASS_AUTH) {
+      return {
+        session: MOCK_SESSION,
+        user: MOCK_SESSION.user,
+        loading: false,
+        async signIn() {
+          return { error: null };
+        },
+        async signUp() {
+          return { error: null };
+        },
+        async signOut() {
+          /* no-op */
+        },
+        async resetPassword() {
+          return { error: null };
+        },
+      };
+    }
+
+    return {
       session,
       user: session?.user ?? null,
       loading,
@@ -70,9 +100,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { error } = await supabase.auth.resetPasswordForEmail(email.trim());
         return { error: error?.message ?? null };
       },
-    }),
-    [session, loading]
-  );
+    };
+  }, [session, loading]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

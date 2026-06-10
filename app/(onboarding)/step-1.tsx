@@ -45,7 +45,7 @@ export default function Step1() {
       </View>
 
       <Text style={styles.label}>Country of origin</Text>
-      <GlassCard padding={0} style={styles.listCard}>
+      <GlassCard padding={0} style={styles.listCard} contentStyle={styles.listContent}>
         <ScrollView
           style={styles.list}
           showsVerticalScrollIndicator={false}
@@ -86,6 +86,9 @@ const styles = StyleSheet.create({
   listCard: {
     flex: 1,
     overflow: 'hidden',
+  },
+  listContent: {
+    flex: 1,
   },
   list: {
     flex: 1,
