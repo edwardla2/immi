@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
+import { impact, ImpactStyle } from '@/lib/haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import Animated, {
@@ -50,7 +50,7 @@ export function PrimaryButton({
           scale.value = withSpring(1, SPRING);
         }}
         onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          impact(ImpactStyle.Medium);
           onPress();
         }}
       >

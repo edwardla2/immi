@@ -15,6 +15,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { ChatInput } from '@/components/chat/ChatInput';
 import { MessageList } from '@/components/chat/MessageList';
+import { DisclosureNote } from '@/components/ui/DisclosureNote';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
@@ -107,6 +108,7 @@ export default function ConversationScreen() {
         title={convLoading ? 'Loading…' : conversation?.title ?? 'Conversation'}
         onBack={() => router.back()}
       />
+      <DisclosureNote style={styles.disclosure} />
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -212,5 +214,9 @@ const styles = StyleSheet.create({
   toastText: {
     ...Typography.labelM,
     color: Colors.success,
+  },
+  disclosure: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
   },
 });

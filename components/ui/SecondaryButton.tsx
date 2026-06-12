@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
+import { impact, ImpactStyle } from '@/lib/haptics';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -52,7 +52,7 @@ export function SecondaryButton({
           scale.value = withSpring(1, SPRING);
         }}
         onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          impact(ImpactStyle.Light);
           onPress();
         }}
         style={[styles.button, isInert && styles.disabled]}

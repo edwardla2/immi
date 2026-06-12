@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { DeadlineCard } from '@/components/timeline/DeadlineCard';
@@ -9,6 +9,7 @@ import { DeadlineSheet } from '@/components/timeline/DeadlineSheet';
 import { TimelineHeader } from '@/components/timeline/TimelineHeader';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { GlassCard } from '@/components/ui/GlassCard';
+import { showAlert } from '@/lib/alert';
 import { Colors } from '@/constants/colors';
 import { Radius, Spacing, TAB_BAR_CLEARANCE } from '@/constants/layout';
 import { Typography } from '@/constants/typography';
@@ -78,7 +79,7 @@ export default function Timeline() {
     if (data) {
       router.push(`/conversation/${data.id}`);
     } else {
-      Alert.alert('Could not start a conversation', error ?? 'Please try again.');
+      showAlert('Could not start a conversation', error ?? 'Please try again.');
     }
   };
 
@@ -87,7 +88,7 @@ export default function Timeline() {
     if (data) {
       router.push(`/conversation/${data.id}?prefill=form`);
     } else {
-      Alert.alert('Could not start a conversation', error ?? 'Please try again.');
+      showAlert('Could not start a conversation', error ?? 'Please try again.');
     }
   };
 

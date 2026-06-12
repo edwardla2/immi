@@ -1,7 +1,6 @@
-import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
-import * as Haptics from 'expo-haptics';
+import { impact, ImpactStyle } from '@/lib/haptics';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,14 +19,34 @@ const ICONS: Record<string, { active: IconName; inactive: IconName }> = {
 
 const TAB_ORDER = ['chat', 'timeline', 'documents', 'profile'];
 
+// Structural subset of BottomTabBarProps covering only what this bar uses.
+// expo-router vendors its own copy of the bottom-tabs types that conflicts
+// with @react-navigation/bottom-tabs', so depending on either breaks tsc.
+interface TabBarProps {
+  state: {
+    index: number;
+    routes: { key: string; name: string }[];
+  };
+  navigation: {
+    emit: (event: {
+      type: 'tabPress';
+      target: string;
+      canPreventDefault: true;
+    }) => { defaultPrevented: boolean };
+    navigate: (name: string) => void;
+  };
+}
+
 /** Floating glass pill tab bar. */
-export function TabBar({ state, navigation }: BottomTabBarProps) {
+export function TabBar({ state, navigation }: TabBarProps) {
   const insets = useSafeAreaInsets();
 
   // Order routes deterministically and ignore any that aren't real tabs.
+  // Route names differ by platform: "chat" on native, "chat/index" on web.
   type TabRoute = (typeof state.routes)[number];
+  const tabName = (route: TabRoute) => route.name.split('/')[0];
   const routes = TAB_ORDER.map((name) =>
-    state.routes.find((r: TabRoute) => r.name === name)
+    state.routes.find((r: TabRoute) => tabName(r) === name)
   ).filter((r): r is TabRoute => Boolean(r));
 
   return (
@@ -36,10 +55,10 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
         {routes.map((route) => {
           const routeIndex = state.routes.findIndex((r: TabRoute) => r.key === route.key);
           const isFocused = state.index === routeIndex;
-          const icons = ICONS[route.name];
+          const icons = ICONS[tabName(route)];
 
           const onPress = () => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            impact(ImpactStyle.Light);
             const event = navigation.emit({
               type: 'tabPress',
               target: route.key,

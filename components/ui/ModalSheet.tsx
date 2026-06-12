@@ -1,9 +1,10 @@
 import { BlurView } from 'expo-blur';
 import { ReactNode } from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { SlideInDown, SlideOutDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { WEB_MAX_WIDTH } from '@/components/ui/WebAppFrame';
 import { Colors } from '@/constants/colors';
 import { Radius, Spacing } from '@/constants/layout';
 import { Typography } from '@/constants/typography';
@@ -64,6 +65,12 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
+    // On web the Modal portals outside the centered app frame, so the sheet
+    // must constrain itself to the same phone-width column.
+    ...Platform.select({
+      web: { maxWidth: WEB_MAX_WIDTH, marginHorizontal: 'auto' },
+      default: {},
+    }),
     backgroundColor: Colors.bgSheet,
     borderTopLeftRadius: Radius.xxl,
     borderTopRightRadius: Radius.xxl,

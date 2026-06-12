@@ -1,6 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
-import { Alert } from 'react-native';
 import { useCallback, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -11,6 +10,7 @@ import { DocumentSheet } from '@/components/documents/DocumentSheet';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { Screen } from '@/components/ui/Screen';
+import { showAlert } from '@/lib/alert';
 import { Colors } from '@/constants/colors';
 import { Radius, Spacing, TAB_BAR_CLEARANCE } from '@/constants/layout';
 import { Typography } from '@/constants/typography';
@@ -68,14 +68,14 @@ export default function Documents() {
   }, [documents, filter]);
 
   const confirmDelete = (doc: Document) => {
-    Alert.alert('Delete document', `Remove "${doc.name}" from your checklist?`, [
+    showAlert('Delete document', `Remove "${doc.name}" from your checklist?`, [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: () => remove(doc.id) },
     ]);
   };
 
   const showNotes = (doc: Document) => {
-    Alert.alert(doc.name, doc.description?.trim() || 'No notes for this document yet.');
+    showAlert(doc.name, doc.description?.trim() || 'No notes for this document yet.');
   };
 
   const isEmpty = documents.length === 0;

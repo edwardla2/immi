@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
-import * as Haptics from 'expo-haptics';
+import { impact, ImpactStyle } from '@/lib/haptics';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -27,7 +27,7 @@ export function ChatInput({ onSend, disabled = false, initialText }: ChatInputPr
 
   const handleSend = () => {
     if (!canSend) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    impact(ImpactStyle.Medium);
     onSend(text.trim());
     setText('');
   };

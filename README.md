@@ -63,7 +63,37 @@ SUPABASE_ACCESS_TOKEN=your_token npx supabase secrets set ANTHROPIC_API_KEY=your
 
 ```bash
 npm run ios      # or: npm run android
+npx expo start --web   # web target (for browser validation)
 ```
+
+## Deploying the Web App (Vercel)
+
+The app ships a web target (react-native-web, metro bundler, single-page output). `vercel.json`
+is already configured with the build command, output directory, and SPA rewrites.
+
+**CLI flow:**
+
+```bash
+npm i -g vercel
+vercel login
+vercel          # first deploy — accept defaults, vercel.json drives the build
+vercel --prod   # promote to production
+```
+
+**Dashboard flow:** import the GitHub repo at vercel.com/new — the settings are picked up from
+`vercel.json` automatically.
+
+**Environment variables (set in the Vercel project, all environments):**
+
+| Variable | Value | Notes |
+| --- | --- | --- |
+| `EXPO_PUBLIC_SUPABASE_URL` | your Supabase project URL | public by design |
+| `EXPO_PUBLIC_SUPABASE_ANON_KEY` | your Supabase anon key | public by design, protected by RLS |
+
+`ANTHROPIC_API_KEY` must **never** be set in Vercel — it lives only as a Supabase edge-function
+secret (`npx supabase secrets set ANTHROPIC_API_KEY=…`). `EXPO_PUBLIC_*` values are inlined into
+the client bundle at build time, which is fine for the Supabase pair and catastrophic for anything
+secret.
 
 ## Project Structure
 

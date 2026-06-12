@@ -1,13 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
-import { Alert, Linking, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { ProfileEditSheet } from '@/components/profile/ProfileEditSheet';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { SecondaryButton } from '@/components/ui/SecondaryButton';
 import { Screen } from '@/components/ui/Screen';
+import { showAlert } from '@/lib/alert';
 import { Colors } from '@/constants/colors';
 import { Radius, Spacing, TAB_BAR_CLEARANCE } from '@/constants/layout';
 import { Typography } from '@/constants/typography';
@@ -38,27 +39,27 @@ export default function ProfileScreen() {
 
   const changePassword = () => {
     if (!user?.email) return;
-    Alert.alert('Change password', `Send a password reset link to ${user.email}?`, [
+    showAlert('Change password', `Send a password reset link to ${user.email}?`, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Send link',
         onPress: async () => {
           await resetPassword(user.email!);
-          Alert.alert('Check your email', 'We sent you a password reset link.');
+          showAlert('Check your email', 'We sent you a password reset link.');
         },
       },
     ]);
   };
 
   const confirmSignOut = () => {
-    Alert.alert('Sign out', 'Are you sure you want to sign out?', [
+    showAlert('Sign out', 'Are you sure you want to sign out?', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Sign out', style: 'destructive', onPress: () => signOut() },
     ]);
   };
 
   const confirmDelete = () => {
-    Alert.alert(
+    showAlert(
       'Delete account',
       'This permanently deletes your account and all your data. This cannot be undone.',
       [
@@ -81,7 +82,7 @@ export default function ProfileScreen() {
     );
   };
 
-  const howItWorks = () => Alert.alert('How Immi works', HOW_IT_WORKS);
+  const howItWorks = () => showAlert('How Immi works', HOW_IT_WORKS);
 
   return (
     <Screen edges={['top']}>

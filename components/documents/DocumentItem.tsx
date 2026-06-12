@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
+import { impact, ImpactStyle } from '@/lib/haptics';
 import { useRef } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import ReanimatedSwipeable, {
@@ -30,7 +30,7 @@ export function DocumentItem({ document, onCycleStatus, onPress, onDelete }: Doc
   const meta = STATUS_META[document.status];
 
   const handleCycle = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    impact(ImpactStyle.Light);
     onCycleStatus();
   };
 

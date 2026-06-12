@@ -12,6 +12,7 @@ import { StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { WebAppFrame } from '@/components/ui/WebAppFrame';
 import { Wordmark } from '@/components/ui/Wordmark';
 import { Colors } from '@/constants/colors';
 import { AuthProvider } from '@/hooks/useAuth';
@@ -38,26 +39,28 @@ export default function RootLayout() {
     <GestureHandlerRootView style={styles.flex}>
       <SafeAreaProvider>
         <StatusBar style="light" />
-        {!fontsLoaded ? (
-          <SplashScreen />
-        ) : (
-          <AuthProvider>
-            <ProfileProvider>
-              <Stack
-                screenOptions={{
-                  headerShown: false,
-                  contentStyle: { backgroundColor: Colors.bg },
-                  animation: 'fade',
-                }}
-              >
-                <Stack.Screen name="index" />
-                <Stack.Screen name="(auth)" />
-                <Stack.Screen name="(onboarding)" />
-                <Stack.Screen name="(app)" />
-              </Stack>
-            </ProfileProvider>
-          </AuthProvider>
-        )}
+        <WebAppFrame>
+          {!fontsLoaded ? (
+            <SplashScreen />
+          ) : (
+            <AuthProvider>
+              <ProfileProvider>
+                <Stack
+                  screenOptions={{
+                    headerShown: false,
+                    contentStyle: { backgroundColor: Colors.bg },
+                    animation: 'fade',
+                  }}
+                >
+                  <Stack.Screen name="index" />
+                  <Stack.Screen name="(auth)" />
+                  <Stack.Screen name="(onboarding)" />
+                  <Stack.Screen name="(app)" />
+                </Stack>
+              </ProfileProvider>
+            </AuthProvider>
+          )}
+        </WebAppFrame>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

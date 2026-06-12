@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
+import { impact, ImpactStyle } from '@/lib/haptics';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ui/GlassCard';
@@ -29,7 +29,7 @@ export function DeadlineCard({ deadline, onPress, onToggleComplete }: DeadlineCa
   const isComplete = deadline.status === 'completed';
 
   const handleToggle = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    impact(ImpactStyle.Light);
     onToggleComplete();
   };
 

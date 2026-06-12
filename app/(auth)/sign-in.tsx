@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
+import { DisclosureNote } from '@/components/ui/DisclosureNote';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { KeyboardAvoidingWrapper } from '@/components/ui/KeyboardAvoidingWrapper';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
@@ -107,6 +108,8 @@ export default function SignIn() {
               </TouchableOpacity>
             </Link>
           </View>
+
+          <DisclosureNote style={styles.disclosure} />
         </ScrollView>
       </KeyboardAvoidingWrapper>
     </Screen>
@@ -157,5 +160,8 @@ const styles = StyleSheet.create({
   footerLink: {
     ...Typography.labelL,
     color: Colors.accent,
+  },
+  disclosure: {
+    marginTop: Spacing.xl,
   },
 });

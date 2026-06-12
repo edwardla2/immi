@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
-import * as Haptics from 'expo-haptics';
+import { impact, ImpactStyle } from '@/lib/haptics';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { ConversationCard } from '@/components/chat/ConversationCard';
@@ -10,6 +10,7 @@ import { DevModeBadge } from '@/components/ui/DevModeBadge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { Screen } from '@/components/ui/Screen';
+import { showAlert } from '@/lib/alert';
 import { Colors } from '@/constants/colors';
 import { Radius, Spacing, TAB_BAR_CLEARANCE } from '@/constants/layout';
 import { Typography } from '@/constants/typography';
@@ -34,7 +35,7 @@ export default function ChatList() {
     if (data) {
       router.push(`/conversation/${data.id}`);
     } else {
-      Alert.alert(
+      showAlert(
         'Could not start a conversation',
         error ?? 'Something went wrong. Please check your connection and try again.'
       );
@@ -42,7 +43,7 @@ export default function ChatList() {
   };
 
   const handleDelete = (id: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    impact(ImpactStyle.Medium);
     deleteConversation(id);
   };
 
