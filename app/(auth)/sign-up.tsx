@@ -43,7 +43,8 @@ export default function SignUp() {
     const { error: authError } = await signUp(email, password, name);
     setLoading(false);
     if (authError) setError(authError);
-    // On success, the root layout redirects to onboarding.
+    // On success the session updates and the auth-group layout redirects out
+    // to the entry router, which sends a new user to onboarding.
   };
 
   return (

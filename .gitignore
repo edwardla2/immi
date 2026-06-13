@@ -45,3 +45,4 @@ yarn-error.*
 
 # supabase CLI scratch
 supabase/.temp/
+.vercel

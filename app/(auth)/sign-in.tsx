@@ -46,7 +46,8 @@ export default function SignIn() {
     if (authError) {
       setError(authError);
     }
-    // On success, the root layout redirects automatically.
+    // On success the session updates and the auth-group layout redirects out
+    // to the entry router, which resolves onboarding vs. the app.
   };
 
   return (
