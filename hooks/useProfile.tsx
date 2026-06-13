@@ -32,7 +32,11 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       return;
     }
     setLoading(true);
-    const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+    // maybeSingle, not single: a user whose profile row doesn't exist yet (e.g.
+    // signed up before the handle_new_user trigger was applied) returns zero rows.
+    // single() would throw "Cannot coerce the result to a single JSON object";
+    // maybeSingle() returns null cleanly and lets onboarding create the row.
+    const { data } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
     setProfile((data as Profile) ?? null);
     setLoading(false);
   }, [user]);
@@ -49,10 +53,13 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         return { error: null };
       }
       if (!user) return { error: 'Not authenticated' };
+      // upsert, not update: update() matches zero rows (and .single() then errors)
+      // for any user missing a profile row. Upserting on the id primary key creates
+      // the row if absent and merges into it if present, so onboarding self-heals a
+      // missing row instead of failing. The insert RLS policy permits auth.uid() = id.
       const { data, error } = await supabase
         .from('profiles')
-        .update(updates)
-        .eq('id', user.id)
+        .upsert({ id: user.id, ...updates })
         .select()
         .single();
       if (!error && data) setProfile(data as Profile);
