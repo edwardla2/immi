@@ -50,7 +50,10 @@ The app runs without these (you'll see a warning), but auth and data won't work 
 
 In the Supabase SQL editor, run [`supabase/schema.sql`](supabase/schema.sql). This creates the
 `profiles`, `conversations`, `messages`, `deadlines`, and `documents` tables with row-level
-security, the signup trigger, and `updated_at` triggers.
+security, the signup trigger, `updated_at` triggers, and the `rate_limits` table + increment
+function used for abuse protection (see below). On an **existing** project, you can apply just the
+abuse-protection pieces by running [`supabase/rate_limits.sql`](supabase/rate_limits.sql) — it's
+idempotent (`if not exists` / `or replace`).
 
 ### 4. Deploy the chat edge function
 
@@ -112,8 +115,9 @@ hooks/                    useAuth, useProfile, useConversations, useMessages, �
 lib/                      supabase client, types, api helper, utils
 constants/                colors, typography, layout, visaTypes, stages, …
 supabase/
-  schema.sql              Database schema + RLS
-  functions/chat/         Anthropic-backed chat edge function
+  schema.sql              Database schema + RLS (includes rate_limits)
+  rate_limits.sql         Abuse-protection table + RPC (apply to existing projects)
+  functions/chat/         Anthropic-backed chat edge function (rate limiting, kill switch)
 ```
 
 ## Design System
@@ -121,6 +125,79 @@ supabase/
 Dark mode only. Deep navy (`#070B14`) backgrounds, liquid-glass surfaces, a warm trust-blue accent
 (`#4F8EF7`), and Space Grotesk throughout. Tokens live in `constants/` (`colors.ts`,
 `typography.ts`, `layout.ts`).
+
+## Abuse Protection (chat endpoint)
+
+Every chat message costs money via the Anthropic API, so the `chat` edge function is hardened
+against abuse **server-side** — client-side limits are worthless because anyone can call the
+function directly. All of this lives in `supabase/functions/chat/index.ts` and the `rate_limits`
+table.
+
+**Rate limits** (named constants at the top of the function, tune freely):
+
+| Limit | Default | Why |
+| --- | --- | --- |
+| `USER_PER_HOUR` | 30 | a heavy real session (lots of follow-ups) stays under it |
+| `USER_PER_DAY` | 80 | generous for genuine use; hard daily cap per account |
+| `IP_PER_HOUR` | 60 | backstop against one IP scripting many accounts; set above the per-user hourly cap so shared NATs (dorms, offices) with several real users aren't falsely blocked |
+
+Enforced **before any Anthropic call**: the function increments per-user and per-IP counters
+(in the `rate_limits` table, via the atomic `increment_rate_limit` RPC) and returns a `429` with a
+friendly message if any cap is exceeded. The client surfaces that message in the chat as a normal
+error bubble — no crash. **Tuning cost:** a message costs roughly a few cents (large system prompt
+in, up to 1024 tokens out, occasionally a tool round), so `USER_PER_DAY=80` bounds one account to a
+few dollars/day worst case. Raise/lower the constants to match your risk tolerance.
+
+The IP is **hashed** (SHA-256, salted by the optional `RATE_LIMIT_SALT` secret) before storage or
+logging — raw IPs are never persisted.
+
+**Per-call blast radius** (also constants in the function):
+
+- `MAX_OUTPUT_TOKENS = 1024` — caps the cost of any single reply.
+- `MAX_INPUT_CHARS = 4000` — inputs longer than this are rejected (`413`) before reaching Claude,
+  so nobody can paste a 50 KB wall of text to inflate input tokens.
+- `MAX_HISTORY_MESSAGES = 20` — only the last 20 turns are sent to the model, so a long
+  conversation doesn't make every call progressively more expensive.
+
+**Kill switch — instant, no redeploy.** The function checks a `CHAT_ENABLED` secret first. Set it
+to `false` in the Supabase dashboard (Edge Functions → Secrets) to immediately stop **all** Anthropic
+spend; set it back to `true` (or delete it) to re-enable. Use it the moment you see a runaway bill.
+
+```bash
+# disable all chat spend instantly:
+npx supabase secrets set CHAT_ENABLED=false --project-ref <ref>
+# re-enable:
+npx supabase secrets set CHAT_ENABLED=true --project-ref <ref>
+```
+
+> The function reads the service-role key from the auto-injected `SUPABASE_SERVICE_ROLE_KEY` secret
+> (Supabase provides it to every edge function by default) — you don't need to set that yourself.
+> `RATE_LIMIT_SALT` and `CHAT_ENABLED` are optional; sensible defaults apply if unset.
+
+**Logging / visibility.** Each request logs a JSON line (visible in the function logs) with the
+hashed user + IP, token usage, tool rounds, and a `limited` flag; rate-limited requests log
+`evt: "chat_rate_limited"`. If total daily volume crosses `DAILY_SANITY_THRESHOLD` (2000), the
+function logs a loud `[immi][ALERT]` warning so a spike is visible.
+
+**Signup abuse.** Supabase's built-in auth rate limiting (per-IP signup/OTP caps) is on by default —
+verify and tune it under Authentication → Rate Limits in the dashboard. The per-IP chat cap above is
+the real backstop: even mass-created accounts can't burn API calls if their IP is capped.
+
+> **Launch decision — email confirmation.** It's currently **OFF** for easy testing. For public
+> launch, consider turning it back **ON** (Authentication → Providers → Email → "Confirm email"). It
+> significantly slows automated account creation. This is a deliberate toggle, not changed here.
+
+### Applying / redeploying after these changes
+
+1. Run [`supabase/rate_limits.sql`](supabase/rate_limits.sql) in the Supabase SQL editor (creates the
+   table + `increment_rate_limit` RPC; idempotent).
+2. Redeploy the function:
+   `SUPABASE_ACCESS_TOKEN=… npx supabase functions deploy chat --project-ref <ref>`
+3. (Optional) set `CHAT_ENABLED` / `RATE_LIMIT_SALT` secrets as above.
+
+> **Final backstop — do this in the Anthropic console.** Set a hard monthly spending limit / budget
+> alert. It's independent of all the code above: even if something slips through, the bill can't
+> exceed what you set. Do it before posting Immi publicly.
 
 ## Notes
 

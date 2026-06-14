@@ -105,3 +105,42 @@ create trigger handle_updated_at before update on public.deadlines
   for each row execute procedure public.handle_updated_at();
 create trigger handle_updated_at before update on public.documents
   for each row execute procedure public.handle_updated_at();
+
+-- Rate limiting / abuse protection (chat endpoint). Mirrors supabase/rate_limits.sql.
+create table if not exists public.rate_limits (
+  id uuid primary key default gen_random_uuid(),
+  identity text not null,          -- "user:<uuid>" | "ip:<hash>" | "global:all"
+  window_start timestamptz not null,
+  count int not null default 0,
+  created_at timestamptz default now()
+);
+
+create unique index if not exists rate_limits_identity_window_idx
+  on public.rate_limits (identity, window_start);
+
+alter table public.rate_limits enable row level security;
+-- No policies: only the chat edge function (service role) touches this table.
+
+create or replace function public.increment_rate_limit(
+  p_identity text,
+  p_window_start timestamptz
+)
+returns int
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  new_count int;
+begin
+  insert into public.rate_limits (identity, window_start, count)
+  values (p_identity, p_window_start, 1)
+  on conflict (identity, window_start)
+  do update set count = public.rate_limits.count + 1
+  returning count into new_count;
+  return new_count;
+end;
+$$;
+
+revoke all on function public.increment_rate_limit(text, timestamptz) from public;
+grant execute on function public.increment_rate_limit(text, timestamptz) to service_role;

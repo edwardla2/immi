@@ -44,17 +44,30 @@ export async function sendChatMessage(
     // FunctionsHttpError carries the raw Response in `context` — pull the
     // function's JSON error body so the chat bubble shows the real cause
     // instead of a generic "non-2xx status code".
-    let detail = error.message;
     const ctx = (error as { context?: Response }).context;
+    const status = ctx?.status;
+
+    // Friendly fallbacks for the server-side guardrails, in case the JSON body
+    // can't be read. The edge function also sends its own `error` text (used
+    // first, below), so these are just the safety net.
+    let detail =
+      status === 429
+        ? "You've reached the message limit for now. Take a breather and try again in a bit."
+        : status === 503
+          ? 'Immi is temporarily unavailable. Please try again a little later.'
+          : status === 413
+            ? 'That message is a bit too long — please shorten it and try again.'
+            : error.message;
+
     if (ctx && typeof ctx.json === 'function') {
       try {
         const body = (await ctx.json()) as { error?: string };
         if (body?.error) detail = body.error;
       } catch {
-        // body wasn't JSON; keep the generic message
+        // body wasn't JSON; keep the status-based fallback above
       }
     }
-    console.error('[Immi chat] edge function call failed:', detail, error);
+    console.error('[Immi chat] edge function call failed:', status, detail, error);
     throw new Error(detail || 'Failed to reach Immi. Please try again.');
   }
 
